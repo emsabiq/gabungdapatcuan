@@ -67,12 +67,12 @@ async function afterPaid(){
     $('pOut').textContent = claim.password || '(tersimpan)';
     $('credBox').classList.remove('d-none');
 
-    // auto-login & redirect ke kalkulator
+    // auto-login & redirect ke Aset
     const login = await userLogin(claim.username, claim.password);
     if (login.ok && login.token){
       localStorage.setItem('umkm_token', login.token);
-      showAlert('success','Pembayaran sukses & login berhasil. Mengarahkan ke kalkulator…');
-      setTimeout(()=>location.href='./index.html', 1200);
+      showAlert('success','Pembayaran sukses & login berhasil. Silahkan tunggu 5 detik…');
+      setTimeout(()=>location.href='./akses.html', 1200);
     } else {
       showAlert('warning','Akun dibuat. Silakan login manual.');
     }
