@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Login — Gabung Dapat Cuan</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      /* [DIUBAH] Warna utama diganti menjadi biru teknologi untuk kesan aman & modern */
+      --bs-primary-rgb: 41, 107, 255; 
+      --bs-body-font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      background-image: radial-gradient(#e0e0e0 1px, transparent 0);
+      background-size: 25px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .card-body {
+      padding: 2.5rem;
+    }
+    
+    .brand-logo {
+      font-size: 3.5rem;
+      color: var(--bs-primary);
+      margin-bottom: 1rem;
+    }
+
+    .form-control {
+      height: 50px;
+      border-radius: 10px;
+      padding-left: 2.5rem;
+    }
+    
+    .input-group-text {
+      background-color: transparent;
+      border: none;
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      color: #aaa;
+    }
+    
+    .input-group {
+        position: relative;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .btn-primary {
+        box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.3);
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(var(--bs-primary-rgb), 0.4);
+    }
+
+    .separator {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: #ccc;
+      margin: 2rem 0;
+    }
+    .separator::before,
+    .separator::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #ddd;
+    }
+    .separator:not(:empty)::before {
+      margin-right: .5em;
+    }
+    .separator:not(:empty)::after {
+      margin-left: .5em;
+    }
+    
+    #credBox {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        cursor: pointer;
+        color: #aaa;
+    }
+    .password-toggle:hover {
+        color: #333;
+    }
+
+  </style>
+
+  <script src="./config.js"></script>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-5 col-md-8">
+        
+        <div class="text-center">
+            <i class="bi bi-layers-fill brand-logo"></i>
+            <h2 class="fw-bold mb-1">Portofolio Anda</h2>
+            <p class="text-muted mb-4">Masuk untuk mengelola semua aset digital Anda.</p>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+
+            <div class="mb-3 input-group">
+              <i class="bi bi-person input-group-text"></i>
+              <input id="u" class="form-control" autocomplete="username" required autofocus placeholder="Username Anda">
+            </div>
+            <div class="mb-3 input-group">
+                <i class="bi bi-key input-group-text"></i>
+                <input id="p" type="password" class="form-control" autocomplete="current-password" required placeholder="Password">
+                <i class="bi bi-eye-slash password-toggle" id="togglePassword"></i>
+            </div>
+            <div class="form-text mb-3">Gunakan kredensial yang Anda terima setelah pembayaran sukses.</div>
+
+            <button id="btnLogin" class="btn btn-primary w-100 btn-lg">
+              <span class="t">Masuk Sekarang</span>
+              <span class="s d-none"><span class="spinner-border spinner-border-sm me-1"></span>Memeriksa…</span>
+            </button>
+            <div id="loginMsg" class="small mt-2 text-center"></div>
+
+            <div class="separator">atau</div>
+
+            <h5 class="mb-3 text-center fw-semibold">Lupa Akun Anda?</h5>
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="input-group">
+                    <i class="bi bi-receipt input-group-text"></i>
+                    <input id="claimOrder" class="form-control" placeholder="Masukkan Order ID Pembelian">
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="input-group">
+                    <i class="bi bi-envelope-at input-group-text"></i>
+                    <input id="claimContact" class="form-control" placeholder="Email / No. WhatsApp saat bayar">
+                </div>
+              </div>
+            </div>
+            <button id="btnClaim" class="btn btn-outline-secondary w-100 mt-3">
+              <span class="t">Cek Akun Otomatis</span>
+              <span class="s d-none"><span class="spinner-border spinner-border-sm me-1"></span>Mengecek…</span>
+            </button>
+            <div id="claimMsg" class="small mt-2 text-center"></div>
+
+            <div id="credBox" class="alert alert-light border mt-3 d-none">
+              <div>Username: <strong id="uOut"></strong></div>
+              <div>Password: <strong id="pOut"></strong></div>
+              <button id="copyCred" class="btn btn-sm btn-outline-primary mt-2">
+                  <i class="bi bi-clipboard"></i> <span class="copy-text">Salin</span>
+                </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <a href="./index.html" class="small text-decoration-none">← Kembali ke Halaman Utama</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./auth.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#p');
+        if(togglePassword) {
+            togglePassword.addEventListener('click', function (e) {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.classList.toggle('bi-eye');
+                this.classList.toggle('bi-eye-slash');
+            });
+        }
+        const copyBtn = document.querySelector('#copyCred');
+        if (copyBtn) {
+            const copyTextSpan = copyBtn.querySelector('.copy-text');
+            copyBtn.addEventListener('click', function() {
+                const originalText = copyTextSpan.textContent;
+                copyTextSpan.textContent = 'Tersalin!';
+                setTimeout(() => {
+                    copyTextSpan.textContent = originalText;
+                }, 2000);
+            });
+        }
+    });
+  </script>
+</body>
+</html>
