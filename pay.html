@@ -140,23 +140,24 @@
   </style>
 
   <script src="./config.js"></script>
+
   <!-- Meta Pixel Code -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1328311132182013');
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1328311132182013'); // ganti bila perlu
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
 </head>
 <body>
   <div class="container main-container py-4">
@@ -307,7 +308,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error || 'create-order failed');
-      return j; // {ok, order_id, redirect_url, ...}
+      return j; // {ok, order_id, redirect_url, amount?, gross_amount? ...}
     }
     async function checkStatus(order_id) {
       const r = await fetch(WORKER_URL + '/status-check', {
@@ -315,9 +316,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         headers: {
           'content-type': 'application/json'
         },
-        body: JSON.stringify({
-          order_id
-        })
+        body: JSON.stringify({ order_id })
       });
       return await r.json();
     }
@@ -327,10 +326,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         headers: {
           'content-type': 'application/json'
         },
-        body: JSON.stringify({
-          order_id,
-          contact
-        })
+        body: JSON.stringify({ order_id, contact })
       });
       return await r.json(); // {ok, username, password}
     }
@@ -340,22 +336,27 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         headers: {
           'content-type': 'application/json'
         },
-        body: JSON.stringify({
-          username,
-          password
-        })
+        body: JSON.stringify({ username, password })
       });
       return await r.json(); // {ok, token}
     }
 
     // ================== State ==================
     let currentOrderId = '';
+    let currentAmount = 0;
     let pollTimer = null;
     let opened = null;
-    let lastClaim = {
-      username: '',
-      password: ''
-    };
+    let lastClaim = { username: '', password: '' };
+
+    // Anti-duplikat event FB
+    const _fired = new Set();
+    function fbTrackOnce(name, params) {
+      try {
+        if (_fired.has(name)) return;
+        fbq('track', name, params);
+        _fired.add(name);
+      } catch (_) {}
+    }
 
     function startPolling() {
       if (pollTimer) clearInterval(pollTimer);
@@ -375,6 +376,14 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     }
 
     async function afterPaid() {
+      // Fire Purchase sekali saja, begitu kami yakin status sudah paid
+      fbTrackOnce('Purchase', {
+        value: Number(currentAmount || 0),
+        currency: 'IDR',
+        contents: [{ id: currentOrderId || 'ORDER', quantity: 1 }],
+        content_type: 'product'
+      });
+
       try {
         const contact = $('contact').value.trim();
         const claim = await orderClaim(currentOrderId, contact);
@@ -391,6 +400,9 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         
         $('btnLoginNow').disabled = !(lastClaim.username && lastClaim.password);
 
+        // Opsional: pembuatan akun sukses
+        fbTrackOnce('CompleteRegistration');
+
         showAlert('success', 'Pembayaran sukses! Kredensial telah dibuat.');
         $('credBox').scrollIntoView({ behavior: 'smooth' });
       } catch (e) {
@@ -401,11 +413,8 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     // ================== Prefill ==================
     (() => {
       const pre = (() => {
-        try {
-          return JSON.parse(localStorage.getItem('umkm_prefill') || '{}');
-        } catch (_) {
-          return {};
-        }
+        try { return JSON.parse(localStorage.getItem('umkm_prefill') || '{}'); }
+        catch (_) { return {}; }
       })();
       $('name').value = qs.get('name') || pre.name || '';
       $('contact').value = qs.get('contact') || pre.contact || '';
@@ -421,6 +430,9 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
 
       savePrefill(name, contact);
       togglePayLoading(true);
+
+      // Event iklan: user mulai checkout
+      fbTrackOnce('InitiateCheckout');
 
       try {
         opened = window.open('about:blank', '_blank');
@@ -440,6 +452,16 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         const o = await createOrder(name, contact);
 
         currentOrderId = o.order_id;
+        // Ambil jumlah transaksi bila tersedia dari berbagai kemungkinan field
+        currentAmount = Number(
+          o.amount || o.gross_amount || (o.data && o.data.amount) ||
+          (o.transaction_details && o.transaction_details.gross_amount) ||
+          o.total || o.price || 0
+        );
+
+        // Opsional: user menambahkan info pembayaran
+        fbTrackOnce('AddPaymentInfo');
+
         $('orderId').textContent = currentOrderId;
         const orderBox = $('orderBox');
         orderBox.classList.remove('d-none');
@@ -453,9 +475,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         startPolling();
       } catch (err) {
         showAlert('danger', err.message || String(err));
-        if (opened) try {
-          opened.close();
-        } catch (_) {}
+        if (opened) try { opened.close(); } catch (_) {}
       } finally {
         togglePayLoading(false);
       }
@@ -501,7 +521,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       }
     });
 
-    // ================== Aksi credensial ==================
+    // ================== Aksi kredensial ==================
     $('btnCopy').addEventListener('click', async () => {
       const u = $('uOut').textContent || '';
       const p = $('pOut').textContent || '';
