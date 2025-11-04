@@ -15,6 +15,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
+  <script src="./config.js"></script>
+
   <style>
     :root{
       --brand:#16a34a;       /* green-600 */
@@ -205,6 +207,23 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
               <div class="col-md-7">
                 <label class="form-label mb-1">Kontak (email/WA)</label>
                 <input class="form-control" id="fContact" placeholder="0812xxxx / email" required>
+              </div>
+              <div class="col-12">
+                <div id="leadCaptcha" class="g-recaptcha mb-2"></div>
+                <div id="leadCaptchaError" class="text-danger small d-none">Tolong selesaikan verifikasi captcha sebelum lanjut.</div>
+                <div id="leadCaptchaPolicy" class="form-text small text-muted">
+                  Situs ini dilindungi reCAPTCHA dan tunduk pada
+                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Kebijakan Privasi</a>
+                  serta <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Ketentuan Layanan</a> Google.
+                </div>
+                <div id="leadCaptchaSetupHint" class="alert alert-warning small d-none" role="alert">
+                  Tambahkan <code>LEAD_FORM_RECAPTCHA_SITE_KEY</code> produksi milikmu di <code>config.js</code> agar captcha aktif di domain ini.
+                </div>
+                <noscript>
+                  <div class="alert alert-danger small mt-2" role="alert">
+                    Aktifkan JavaScript di browser untuk menyelesaikan verifikasi captcha sebelum submit.
+                  </div>
+                </noscript>
               </div>
               <div class="col-12 d-grid d-md-flex gap-2">
                 <button class="btn btn-success">
@@ -745,15 +764,190 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     // Tahun footer
     document.getElementById('y').textContent = new Date().getFullYear();
 
-// Redirect form ke checkout
-document.getElementById('leadForm').addEventListener('submit', (e)=>{
-  e.preventDefault();
-  const name = document.getElementById('fName').value.trim();
-  const contact = document.getElementById('fContact').value.trim();
-  // GANTI MENJADI SEPERTI INI
-  try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
-  location.href = './pay.html';
-});
+    const RECAPTCHA_TEST_SITE_KEY = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+    const rawSiteKey = window.UMKM_CONFIG && window.UMKM_CONFIG.LEAD_FORM_RECAPTCHA_SITE_KEY;
+    const configuredSiteKey = typeof rawSiteKey === 'string' ? rawSiteKey.trim() : '';
+    const isLocalEnvironment = ['localhost', '127.0.0.1', '::1'].includes(location.hostname) || location.protocol === 'file:';
+    const isExplicitTestKey = configuredSiteKey === RECAPTCHA_TEST_SITE_KEY;
+    const recaptchaSiteKey = configuredSiteKey && !isExplicitTestKey
+      ? configuredSiteKey
+      : (isLocalEnvironment ? RECAPTCHA_TEST_SITE_KEY : '');
+    const warnMissingProductionKey = !isLocalEnvironment && !configuredSiteKey;
+    const warnTestKeyInProduction = !isLocalEnvironment && isExplicitTestKey;
+
+    const leadCaptchaContainer = document.getElementById('leadCaptcha');
+    const leadCaptchaError = document.getElementById('leadCaptchaError');
+    const leadCaptchaPolicy = document.getElementById('leadCaptchaPolicy');
+    const leadCaptchaSetupHint = document.getElementById('leadCaptchaSetupHint');
+    const leadCaptchaErrorDefault = leadCaptchaError ? leadCaptchaError.textContent : '';
+    let leadCaptchaWidget = null;
+    let leadCaptchaLoader = null;
+
+    function hideLeadCaptchaIfDisabled(){
+      if (!leadCaptchaContainer){ return; }
+      leadCaptchaContainer.classList.toggle('d-none', !recaptchaSiteKey);
+    }
+
+    function hideLeadCaptchaSetupHint(){
+      if (!leadCaptchaSetupHint){ return; }
+      leadCaptchaSetupHint.classList.add('d-none');
+    }
+
+    function showLeadCaptchaSetupHint(message){
+      if (!leadCaptchaSetupHint){ return; }
+      leadCaptchaSetupHint.innerHTML = message;
+      leadCaptchaSetupHint.classList.remove('d-none');
+    }
+
+    function resetLeadCaptchaError(){
+      if (!leadCaptchaError){ return; }
+      leadCaptchaError.textContent = leadCaptchaErrorDefault;
+      leadCaptchaError.classList.add('d-none');
+    }
+
+    function showLeadCaptchaError(message){
+      if (!leadCaptchaError){ return; }
+      leadCaptchaError.textContent = message;
+      leadCaptchaError.classList.remove('d-none');
+    }
+
+    function renderLeadCaptcha(){
+      if (!leadCaptchaContainer || !recaptchaSiteKey){ return; }
+      if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function'){ return; }
+      if (leadCaptchaWidget !== null){ return; }
+
+      leadCaptchaWidget = window.grecaptcha.render(leadCaptchaContainer, {
+        sitekey: recaptchaSiteKey,
+        callback: resetLeadCaptchaError,
+        'expired-callback': ()=>{
+          if (!leadCaptchaError){ return; }
+          leadCaptchaError.textContent = leadCaptchaErrorDefault;
+          leadCaptchaError.classList.remove('d-none');
+        }
+      });
+      resetLeadCaptchaError();
+    }
+
+    function waitForRecaptcha(){
+      if (!recaptchaSiteKey || !leadCaptchaContainer){
+        return Promise.resolve(false);
+      }
+      if (leadCaptchaWidget !== null){
+        return Promise.resolve(true);
+      }
+      if (leadCaptchaLoader){
+        return leadCaptchaLoader;
+      }
+
+      leadCaptchaLoader = new Promise((resolve, reject)=>{
+        function attemptRender(){
+          if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function'){
+            setTimeout(attemptRender, 300);
+            return;
+          }
+          try {
+            if (typeof window.grecaptcha.ready === 'function'){
+              window.grecaptcha.ready(()=>{
+                try {
+                  renderLeadCaptcha();
+                  resolve(true);
+                } catch (err) {
+                  reject(err);
+                }
+              });
+            } else {
+              renderLeadCaptcha();
+              resolve(true);
+            }
+          } catch (err) {
+            reject(err);
+          }
+        }
+
+        if (!document.querySelector('script[src^="https://www.google.com/recaptcha/api.js"]')){
+          const recaptchaScript = document.createElement('script');
+          recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+          recaptchaScript.async = true;
+          recaptchaScript.defer = true;
+          recaptchaScript.onload = ()=>{
+            attemptRender();
+          };
+          recaptchaScript.onerror = ()=>{
+            leadCaptchaLoader = null;
+            showLeadCaptchaError('Captcha gagal dimuat. Silakan refresh halaman dan coba lagi.');
+            reject(new Error('reCAPTCHA script failed to load'));
+          };
+          document.head.appendChild(recaptchaScript);
+        }
+
+        attemptRender();
+      }).catch(err => {
+        console.error('Gagal memuat reCAPTCHA:', err);
+        leadCaptchaLoader = null;
+        return false;
+      });
+
+      return leadCaptchaLoader;
+    }
+
+    hideLeadCaptchaIfDisabled();
+
+    if (!recaptchaSiteKey){
+      if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.add('d-none'); }
+      if (warnMissingProductionKey){
+        console.warn('reCAPTCHA belum dikonfigurasi. Tambahkan LEAD_FORM_RECAPTCHA_SITE_KEY produksi milikmu di config.js.');
+        showLeadCaptchaSetupHint('Aktifkan reCAPTCHA dengan menaruh <code>LEAD_FORM_RECAPTCHA_SITE_KEY</code> milikmu di <code>config.js</code>. Ambil site key dari <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener">Google reCAPTCHA Admin</a>.');
+      } else if (warnTestKeyInProduction){
+        console.warn('Site key testing Google tidak berlaku untuk produksi. Ganti dengan site key domain kamu di config.js.');
+        showLeadCaptchaSetupHint('Kamu masih memakai site key testing Google. Buka <code>config.js</code> dan ganti dengan site key produksi dari <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener">Google reCAPTCHA</a>.');
+      } else {
+        hideLeadCaptchaSetupHint();
+      }
+    } else {
+      if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.remove('d-none'); }
+      if (leadCaptchaContainer){
+        leadCaptchaContainer.dataset.sitekey = recaptchaSiteKey;
+        leadCaptchaContainer.classList.remove('d-none');
+      }
+      hideLeadCaptchaSetupHint();
+      waitForRecaptcha();
+    }
+
+    ['fName','fContact'].forEach((id)=>{
+      const input = document.getElementById(id);
+      if (!input) { return; }
+      input.addEventListener('focus', ()=>{ waitForRecaptcha(); }, { once: true });
+    });
+
+    // Redirect form ke checkout
+    document.getElementById('leadForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const name = document.getElementById('fName').value.trim();
+      const contact = document.getElementById('fContact').value.trim();
+      if (recaptchaSiteKey){
+        waitForRecaptcha();
+      }
+      if (leadCaptchaWidget !== null){
+        const captchaResponse = (typeof grecaptcha !== 'undefined' && typeof grecaptcha.getResponse === 'function')
+          ? grecaptcha.getResponse(leadCaptchaWidget)
+          : '';
+        if (!captchaResponse){
+          showLeadCaptchaError(leadCaptchaErrorDefault || 'Tolong selesaikan verifikasi captcha sebelum lanjut.');
+          leadCaptchaContainer && leadCaptchaContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        resetLeadCaptchaError();
+      } else if (recaptchaSiteKey){
+        showLeadCaptchaError('Captcha sedang dimuat. Mohon tunggu sebentar lalu coba lagi.');
+        return;
+      }
+      // GANTI MENJADI SEPERTI INI
+      try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
+      location.href = './pay.html';
+      if (leadCaptchaWidget !== null && typeof grecaptcha !== 'undefined' && typeof grecaptcha.reset === 'function'){
+        grecaptcha.reset(leadCaptchaWidget);
+      }
+    });
 
     // Countdown ke 23:59 hari ini (Asia/Jakarta)
     function getTonightDeadline(){
