@@ -18,6 +18,11 @@
       app: "./akses.html"
     },
 
+    // ====== reCAPTCHA untuk form lead di landing (opsional) ======
+    // Masukkan site key reCAPTCHA v2 Checkbox produksi milikmu di sini.
+    // Jika dikosongkan, captcha hanya aktif di localhost menggunakan site key testing Google.
+    LEAD_FORM_RECAPTCHA_SITE_KEY: "",
+
     // ====== Kredensial default DEV (hanya aktif di localhost/127.0.0.1/file:) ======
     DEV_DEFAULT_USER: { username: "user1", password: "User@123" },
 
