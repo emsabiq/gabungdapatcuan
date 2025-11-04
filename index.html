@@ -767,89 +767,102 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     const leadCaptchaPolicy = document.getElementById('leadCaptchaPolicy');
     const leadCaptchaErrorDefault = leadCaptchaError ? leadCaptchaError.textContent : '';
     let leadCaptchaWidget = null;
-    let leadCaptchaRetryTimer = null;
+    let leadCaptchaLoader = null;
 
     function hideLeadCaptchaIfDisabled(){
       if (!leadCaptchaContainer){ return; }
       leadCaptchaContainer.classList.toggle('d-none', !recaptchaSiteKey);
     }
 
-    function clearLeadCaptchaRetry(){
-      if (leadCaptchaRetryTimer){
-        clearInterval(leadCaptchaRetryTimer);
-        leadCaptchaRetryTimer = null;
-      }
+    function resetLeadCaptchaError(){
+      if (!leadCaptchaError){ return; }
+      leadCaptchaError.textContent = leadCaptchaErrorDefault;
+      leadCaptchaError.classList.add('d-none');
+    }
+
+    function showLeadCaptchaError(message){
+      if (!leadCaptchaError){ return; }
+      leadCaptchaError.textContent = message;
+      leadCaptchaError.classList.remove('d-none');
     }
 
     function renderLeadCaptcha(){
-    function tryRenderLeadRecaptcha(){
-      if (!leadCaptchaContainer || !recaptchaSiteKey) { return; }
-      if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') { return; }
-      if (leadCaptchaWidget !== null) { return; }
+      if (!leadCaptchaContainer || !recaptchaSiteKey){ return; }
+      if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function'){ return; }
+      if (leadCaptchaWidget !== null){ return; }
 
-      try {
-        leadCaptchaWidget = window.grecaptcha.render(leadCaptchaContainer, {
-
-    function initLeadRecaptcha(){
-      if (!leadCaptchaContainer || !recaptchaSiteKey || !window.grecaptcha) { return; }
-      const renderCaptcha = () => {
-        if (leadCaptchaWidget !== null) { return; }
-        leadCaptchaWidget = grecaptcha.render(leadCaptchaContainer, {
-          sitekey: recaptchaSiteKey,
-          callback: ()=>{
-            if (leadCaptchaError){
-              leadCaptchaError.textContent = leadCaptchaErrorDefault;
-              leadCaptchaError.classList.add('d-none');
-            }
-          },
-          'expired-callback': ()=>{
-            if (leadCaptchaError){
-              leadCaptchaError.textContent = leadCaptchaErrorDefault;
-              leadCaptchaError.classList.remove('d-none');
-            }
-          }
-        });
-        if (leadCaptchaError){
+      leadCaptchaWidget = window.grecaptcha.render(leadCaptchaContainer, {
+        sitekey: recaptchaSiteKey,
+        callback: resetLeadCaptchaError,
+        'expired-callback': ()=>{
+          if (!leadCaptchaError){ return; }
           leadCaptchaError.textContent = leadCaptchaErrorDefault;
-          leadCaptchaError.classList.add('d-none');
+          leadCaptchaError.classList.remove('d-none');
         }
-        clearLeadCaptchaRetry();
-        if (leadCaptchaRetryTimer){
-          clearInterval(leadCaptchaRetryTimer);
-          leadCaptchaRetryTimer = null;
-        }
-      } catch (err) {
-        console.error('Gagal merender reCAPTCHA:', err);
-      }
+      });
+      resetLeadCaptchaError();
     }
 
-    function scheduleLeadCaptchaRetry(){
-      if (!recaptchaSiteKey || leadCaptchaRetryTimer || leadCaptchaWidget !== null){ return; }
-      leadCaptchaRetryTimer = setInterval(()=>{
-        if (leadCaptchaWidget !== null){
-          clearLeadCaptchaRetry();
-          return;
-        }
-        if (window.grecaptcha && typeof window.grecaptcha.ready === 'function'){
-          window.grecaptcha.ready(renderLeadCaptcha);
-        } else {
-          renderLeadCaptcha();
-        }
-      }, 1000);
-    }
+    function waitForRecaptcha(){
+      if (!recaptchaSiteKey || !leadCaptchaContainer){
+        return Promise.resolve(false);
+      }
+      if (leadCaptchaWidget !== null){
+        return Promise.resolve(true);
+      }
+      if (leadCaptchaLoader){
+        return leadCaptchaLoader;
+      }
 
-    function ensureLeadCaptcha(){
-      if (!recaptchaSiteKey){ return; }
-      if (!window.grecaptcha){
-        scheduleLeadCaptchaRetry();
-        return;
-      }
-      if (typeof window.grecaptcha.ready === 'function'){
-        window.grecaptcha.ready(renderLeadCaptcha);
-      } else {
-        renderLeadCaptcha();
-      }
-      scheduleLeadCaptchaRetry();
+      leadCaptchaLoader = new Promise((resolve, reject)=>{
+        function attemptRender(){
+          if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function'){
+            setTimeout(attemptRender, 300);
+            return;
+          }
+          try {
+            if (typeof window.grecaptcha.ready === 'function'){
+              window.grecaptcha.ready(()=>{
+                try {
+                  renderLeadCaptcha();
+                  resolve(true);
+                } catch (err) {
+                  reject(err);
+                }
+              });
+            } else {
+              renderLeadCaptcha();
+              resolve(true);
+            }
+          } catch (err) {
+            reject(err);
+          }
+        }
+
+        if (!document.querySelector('script[src^="https://www.google.com/recaptcha/api.js"]')){
+          const recaptchaScript = document.createElement('script');
+          recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+          recaptchaScript.async = true;
+          recaptchaScript.defer = true;
+          recaptchaScript.onload = ()=>{
+            attemptRender();
+          };
+          recaptchaScript.onerror = ()=>{
+            leadCaptchaLoader = null;
+            showLeadCaptchaError('Captcha gagal dimuat. Silakan refresh halaman dan coba lagi.');
+            reject(new Error('reCAPTCHA script failed to load'));
+          };
+          document.head.appendChild(recaptchaScript);
+        }
+
+        attemptRender();
+      }).catch(err => {
+        console.error('Gagal memuat reCAPTCHA:', err);
+        leadCaptchaLoader = null;
+        return false;
+      });
+
+      return leadCaptchaLoader;
     }
 
     hideLeadCaptchaIfDisabled();
@@ -863,68 +876,14 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         leadCaptchaContainer.dataset.sitekey = recaptchaSiteKey;
         leadCaptchaContainer.classList.remove('d-none');
       }
-      window.leadCaptchaOnload = ()=>{
-        ensureLeadCaptcha();
-        try { delete window.leadCaptchaOnload; } catch (_) {}
-      };
-      const recaptchaScript = document.createElement('script');
-      recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?onload=leadCaptchaOnload&render=explicit';
-      recaptchaScript.async = true;
-      recaptchaScript.defer = true;
-      recaptchaScript.onerror = ()=>{
-        clearLeadCaptchaRetry();
-    function kickLeadRecaptcha(){
-      tryRenderLeadRecaptcha();
-      if (leadCaptchaWidget === null && !leadCaptchaRetryTimer){
-        leadCaptchaRetryTimer = setInterval(tryRenderLeadRecaptcha, 800);
-      };
-
-      if (typeof grecaptcha.ready === 'function') {
-        grecaptcha.ready(renderCaptcha);
-      } else {
-        renderCaptcha();
-      }
-    }
-
-    if (!recaptchaSiteKey){
-      if (leadCaptchaContainer){ leadCaptchaContainer.classList.add('d-none'); }
-      if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.add('d-none'); }
-      console.warn('reCAPTCHA belum dikonfigurasi. Tambahkan LEAD_FORM_RECAPTCHA_SITE_KEY di config.js untuk mengaktifkannya.');
-    } else {
-      const recaptchaScript = document.createElement('script');
-      recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
-      recaptchaScript.async = true;
-      recaptchaScript.defer = true;
-      recaptchaScript.onload = kickLeadRecaptcha;
-      recaptchaScript.onerror = ()=>{
-        if (leadCaptchaError){
-          leadCaptchaError.textContent = 'Captcha gagal dimuat. Silakan refresh halaman dan coba lagi.';
-          leadCaptchaError.classList.remove('d-none');
-        }
-      };
-      document.head.appendChild(recaptchaScript);
-      ensureLeadCaptcha();
-      kickLeadRecaptcha();
-      if (window.grecaptcha){
-        kickLeadRecaptcha();
-      }
+      waitForRecaptcha();
     }
 
     ['fName','fContact'].forEach((id)=>{
       const input = document.getElementById(id);
       if (!input) { return; }
-      input.addEventListener('focus', ensureLeadCaptcha, { once: true });
+      input.addEventListener('focus', ()=>{ waitForRecaptcha(); }, { once: true });
     });
-
-      input.addEventListener('focus', kickLeadRecaptcha, { once: true });
-    });
-
-      recaptchaScript.onload = initLeadRecaptcha;
-      document.head.appendChild(recaptchaScript);
-      if (window.grecaptcha){
-        initLeadRecaptcha();
-      }
-    }
 
     // Redirect form ke checkout
     document.getElementById('leadForm').addEventListener('submit', (e)=>{
@@ -932,31 +891,26 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       const name = document.getElementById('fName').value.trim();
       const contact = document.getElementById('fContact').value.trim();
       if (recaptchaSiteKey){
-        ensureLeadCaptcha();
-        kickLeadRecaptcha();
+        waitForRecaptcha();
       }
       if (leadCaptchaWidget !== null){
-        const captchaResponse = grecaptcha.getResponse(leadCaptchaWidget);
+        const captchaResponse = (typeof grecaptcha !== 'undefined' && typeof grecaptcha.getResponse === 'function')
+          ? grecaptcha.getResponse(leadCaptchaWidget)
+          : '';
         if (!captchaResponse){
-          if (leadCaptchaError){ leadCaptchaError.classList.remove('d-none'); }
+          showLeadCaptchaError(leadCaptchaErrorDefault || 'Tolong selesaikan verifikasi captcha sebelum lanjut.');
           leadCaptchaContainer && leadCaptchaContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
-        if (leadCaptchaError){
-          leadCaptchaError.textContent = leadCaptchaErrorDefault;
-          leadCaptchaError.classList.add('d-none');
-        }
+        resetLeadCaptchaError();
       } else if (recaptchaSiteKey){
-        if (leadCaptchaError){
-          leadCaptchaError.textContent = 'Captcha sedang dimuat. Mohon tunggu sebentar lalu coba lagi.';
-          leadCaptchaError.classList.remove('d-none');
-        }
+        showLeadCaptchaError('Captcha sedang dimuat. Mohon tunggu sebentar lalu coba lagi.');
         return;
       }
       // GANTI MENJADI SEPERTI INI
       try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
       location.href = './pay.html';
-      if (leadCaptchaWidget !== null){
+      if (leadCaptchaWidget !== null && typeof grecaptcha !== 'undefined' && typeof grecaptcha.reset === 'function'){
         grecaptcha.reset(leadCaptchaWidget);
       }
     });
