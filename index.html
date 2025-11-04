@@ -26,9 +26,27 @@
     }
     html{ scroll-behavior:smooth; }
     body{ color:var(--ink); }
+    .py-6{padding-top:4.5rem;padding-bottom:4.5rem;}
+    @media (min-width: 992px){
+      .py-6{padding-top:6rem;padding-bottom:6rem;}
+    }
     .navbar{ backdrop-filter:saturate(140%) blur(6px); }
-    .navbar .cta-stack{gap:.75rem;}
-    .navbar .btn-nav{white-space:nowrap;}
+    .navbar .cta-stack{gap:.75rem;width:100%;}
+    .navbar .btn-nav{
+      white-space:nowrap;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.4rem;
+      min-height:44px;
+    }
+    @media (min-width: 992px){
+      .navbar .cta-stack{
+        flex-wrap:nowrap;
+        gap:1rem;
+        width:auto;
+      }
+    }
     .brand-badge{
       width:34px;height:34px;border-radius:9px;
       background:linear-gradient(135deg,#059669,#16a34a);
@@ -101,6 +119,10 @@
       border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;
     }
     .smallcaps{font-variant:all-small-caps;letter-spacing:.06em}
+    .hero-aside{display:grid;gap:1.5rem;}
+    @media (min-width: 1200px){
+      .hero-aside{gap:1.75rem;}
+    }
     .lead-card{
       position:relative;overflow:hidden;
     }
@@ -173,7 +195,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
           <li class="nav-item"><a class="nav-link" href="#resell">Untuk Dijual Kembali</a></li>
         </ul>
 
-        <div class="cta-stack d-flex align-items-center flex-column flex-lg-row mt-3 mt-lg-0">
+        <div class="cta-stack d-flex align-items-center flex-column flex-lg-row mt-3 mt-lg-0 ms-lg-auto">
           <a class="btn btn-outline-secondary btn-nav w-100 w-lg-auto" href="#testi">
             <i class="fa-solid fa-star me-1"></i>
             Testimoni
@@ -191,7 +213,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
   <!-- HERO -->
   <section class="hero py-6">
     <div class="container">
-      <div class="row g-4 align-items-lg-center">
+      <div class="row gy-5 gx-lg-5 align-items-start align-items-lg-stretch">
         <div class="col-lg-6 col-xl-7">
           <div class="d-flex align-items-center gap-2 mb-3">
             <span class="check-pill"><i class="fa-solid fa-database me-1 text-success"></i> 1x Akses = <strong>10JT+</strong> Produk Digital Siap Jual</span>
@@ -243,7 +265,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
           </div>
 
         <div class="col-lg-6 col-xl-5">
-          <div class="d-flex flex-column gap-4">
+          <div class="hero-aside">
             <div class="glass hero-product p-3 p-md-4">
               <img src="assets/1759329657580-1755852698-min.jpg" class="img-fluid rounded-4" alt="10 Jt+ Asset Digital">
             </div>
@@ -452,6 +474,54 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     </div>
   </section>
 
+  <!-- RESELLER PROOF -->
+  <section id="resell-proof" class="py-5 bg-success bg-opacity-10">
+    <div class="container">
+      <div class="row g-4 align-items-stretch">
+        <div class="col-lg-4">
+          <div class="p-4 border border-success-subtle rounded-4 h-100 bg-white shadow-soft">
+            <div class="badge bg-success bg-opacity-10 text-success-emphasis border border-success-subtle smallcaps mb-3">Blueprint Reseller</div>
+            <h3 class="h4 fw-bold mb-3">Modal Kecil, Nilai Jual Besar</h3>
+            <p class="muted small mb-3">Ambil 3–5 aset favorit, rebrand pakai template siap edit, lalu kemas sebagai bundle eksklusif. Kami sertakan copywriting, desain promosi, dan manifest lisensi agar kamu percaya diri jualan kembali.</p>
+            <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-success bg-opacity-10">
+              <div class="icon-circle"><i class="fa-solid fa-crown"></i></div>
+              <div class="small fw-semibold text-success">Lisensi PLR/MRR tertulis jelas—aman dipakai jual ulang di platform favoritmu.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="row g-4">
+            <div class="col-md-4">
+              <div class="p-4 border rounded-4 h-100 bg-white shadow-sm">
+                <div class="icon-circle mb-2"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <div class="fw-semibold mb-1">Bundle Custom</div>
+                <div class="small muted">Mix & match produk populer untuk audiensmu. Tambah bonus agar value makin tinggi.</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-4 border rounded-4 h-100 bg-white shadow-sm">
+                <div class="icon-circle mb-2"><i class="fa-solid fa-bullseye"></i></div>
+                <div class="fw-semibold mb-1">Template Pitch</div>
+                <div class="small muted">Gunakan script closing & materi promo siap pakai untuk DM, WA Blast, atau landing page.</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-4 border rounded-4 h-100 bg-white shadow-sm">
+                <div class="icon-circle mb-2"><i class="fa-solid fa-people-group"></i></div>
+                <div class="fw-semibold mb-1">Program Reseller</div>
+                <div class="small muted">Aktifkan sistem komisi sendiri. Kami siapkan panduan step-by-step rekrut reseller baru.</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 border rounded-4 bg-white shadow-sm d-flex flex-column flex-md-row align-items-md-center gap-3">
+            <div class="icon-circle"><i class="fa-solid fa-rotate"></i></div>
+            <div class="small muted">Setiap bulan kamu dapat update aset baru + checklist campaign, jadi stok jualanmu tidak pernah kering.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- WHAT YOU GET -->
   <section id="isi" class="py-5">
     <div class="container">
@@ -611,7 +681,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
               </div>
               <div class="col-md-6 d-grid gap-2">
                 <!-- Ganti link checkout di sini -->
-                <a class="btn btn-success btn-lg" href="#leadForm">
+                <a class="btn btn-success btn-lg" href="#leadForm" data-scroll-to-form>
                   <i class="fa-solid fa-bolt me-1"></i> Dapatkan Akses Sekarang — Rp99.000
                 </a>
                 <a class="btn btn-outline-success" href="#testi"><i class="fa-solid fa-star me-1"></i> Lihat Testimoni</a>
@@ -838,10 +908,10 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
   <!-- FOOTER -->
   <footer class="border-top py-4">
     <div class="container small d-flex flex-wrap gap-2 align-items-center justify-content-between">
-      <div>© <span id="y"></span> Aset Digital Cuan</div>
+      <div>© <span id="y"></span> Gabung Dapat Cuan</div>
       <div class="d-flex align-items-center gap-3">
         <a class="text-decoration-none muted" href="#harga"><i class="fa-solid fa-list-ul me-1"></i> Harga</a>
-        <a class="btn btn-success btn-sm" href="#leadForm">
+        <a class="btn btn-success btn-sm" href="#leadForm" data-scroll-to-form>
           <i class="fa-solid fa-bolt me-1"></i> Dapatkan Akses
         </a>
       </div>
@@ -852,7 +922,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
   <div class="floating-cta" id="floater" aria-hidden="true">
     <div class="container d-flex align-items-center justify-content-between gap-2">
       <div class="small">Harga spesial <strong>Rp99.000</strong> berakhir <strong>23:59</strong>—amankan aksesmu sekarang.</div>
-      <a href="#leadForm" class="btn btn-success btn-sm"><i class="fa-solid fa-bolt me-1"></i> Dapatkan Akses</a>
+      <a href="#leadForm" class="btn btn-success btn-sm" data-scroll-to-form><i class="fa-solid fa-bolt me-1"></i> Dapatkan Akses</a>
     </div>
   </div>
 
@@ -862,6 +932,19 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
   <script>
     // Tahun footer
     document.getElementById('y').textContent = new Date().getFullYear();
+
+    const leadForm = document.getElementById('leadForm');
+    document.querySelectorAll('[data-scroll-to-form]').forEach(btn => {
+      btn.addEventListener('click', (ev)=>{
+        ev.preventDefault();
+        if (!leadForm){ return; }
+        leadForm.scrollIntoView({ behavior:'smooth', block:'start' });
+        setTimeout(()=>{
+          const firstField = leadForm.querySelector('input');
+          if (firstField){ firstField.focus({ preventScroll:true }); }
+        }, 450);
+      });
+    });
 
     const leadChallengePrompt = document.getElementById('leadChallengePrompt');
     const leadChallengeAnswer = document.getElementById('leadChallengeAnswer');
@@ -910,31 +993,32 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     setChallenge();
 
     // Redirect form ke checkout
-    document.getElementById('leadForm').addEventListener('submit', (e)=>{
-      e.preventDefault();
-      const name = document.getElementById('fName').value.trim();
-      const contact = document.getElementById('fContact').value.trim();
-      if (leadConfirmCheckbox && !leadConfirmCheckbox.checked){
-        showChallengeError('Mohon centang pernyataan konfirmasi terlebih dahulu.');
-        leadConfirmCheckbox.focus();
-        return;
-      }
-      if (leadChallengeAnswer){
-        const expected = parseInt(leadChallengeAnswer.dataset.expected || '', 10);
-        const response = parseInt(leadChallengeAnswer.value.trim(), 10);
-        if (!Number.isFinite(response) || response !== expected){
-          showChallengeError('Jawabannya belum tepat. Yuk isi lagi supaya tim kami bisa lanjut bantu kamu.');
-          leadChallengeAnswer.focus();
-          setChallenge();
+    if (leadForm){
+      leadForm.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = document.getElementById('fName').value.trim();
+        const contact = document.getElementById('fContact').value.trim();
+        if (leadConfirmCheckbox && !leadConfirmCheckbox.checked){
+          showChallengeError('Mohon centang pernyataan konfirmasi terlebih dahulu.');
+          leadConfirmCheckbox.focus();
           return;
         }
-      }
-      resetChallengeError();
-      // GANTI MENJADI SEPERTI INI
-      try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
-      location.href = './pay.html';
-      setTimeout(()=>{ setChallenge(); }, 3000);
-    });
+        if (leadChallengeAnswer){
+          const expected = parseInt(leadChallengeAnswer.dataset.expected || '', 10);
+          const response = parseInt(leadChallengeAnswer.value.trim(), 10);
+          if (!Number.isFinite(response) || response !== expected){
+            showChallengeError('Jawabannya belum tepat. Yuk isi lagi supaya tim kami bisa lanjut bantu kamu.');
+            leadChallengeAnswer.focus();
+            setChallenge();
+            return;
+          }
+        }
+        resetChallengeError();
+        try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
+        location.href = './pay.html';
+        setTimeout(()=>{ setChallenge(); }, 3000);
+      });
+    }
 
     // Countdown ke 23:59 hari ini (Asia/Jakarta)
     function getTonightDeadline(){
