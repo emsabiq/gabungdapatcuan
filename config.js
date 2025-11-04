@@ -19,6 +19,9 @@
     },
 
     // ====== reCAPTCHA untuk form lead di landing (opsional) ======
+    // Default pakai site key testing Google agar langsung terlihat di demo.
+    // Ganti dengan site key reCAPTCHA v2 Checkbox milikmu untuk produksi.
+    LEAD_FORM_RECAPTCHA_SITE_KEY: "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",
     // Isi dengan site key reCAPTCHA v2 Checkbox milikmu agar lead form terlindungi bot.
     LEAD_FORM_RECAPTCHA_SITE_KEY: "",
 

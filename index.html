@@ -216,6 +216,11 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
                   <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Kebijakan Privasi</a>
                   serta <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Ketentuan Layanan</a> Google.
                 </div>
+                <noscript>
+                  <div class="alert alert-danger small mt-2" role="alert">
+                    Aktifkan JavaScript di browser untuk menyelesaikan verifikasi captcha sebelum submit.
+                  </div>
+                </noscript>
               </div>
               <div class="col-12 d-grid d-md-flex gap-2">
                 <button class="btn btn-success">
@@ -760,17 +765,40 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     const leadCaptchaContainer = document.getElementById('leadCaptcha');
     const leadCaptchaError = document.getElementById('leadCaptchaError');
     const leadCaptchaPolicy = document.getElementById('leadCaptchaPolicy');
+    const leadCaptchaErrorDefault = leadCaptchaError ? leadCaptchaError.textContent : '';
     let leadCaptchaWidget = null;
 
     function initLeadRecaptcha(){
       if (!leadCaptchaContainer || !recaptchaSiteKey || !window.grecaptcha) { return; }
-      leadCaptchaWidget = grecaptcha.render(leadCaptchaContainer, {
-        sitekey: recaptchaSiteKey,
-        callback: ()=>{ if (leadCaptchaError){ leadCaptchaError.classList.add('d-none'); } },
-        'expired-callback': ()=>{ if (leadCaptchaError){ leadCaptchaError.classList.remove('d-none'); } }
-      });
+      const renderCaptcha = () => {
+        if (leadCaptchaWidget !== null) { return; }
+        leadCaptchaWidget = grecaptcha.render(leadCaptchaContainer, {
+          sitekey: recaptchaSiteKey,
+          callback: ()=>{
+            if (leadCaptchaError){
+              leadCaptchaError.textContent = leadCaptchaErrorDefault;
+              leadCaptchaError.classList.add('d-none');
+            }
+          },
+          'expired-callback': ()=>{
+            if (leadCaptchaError){
+              leadCaptchaError.textContent = leadCaptchaErrorDefault;
+              leadCaptchaError.classList.remove('d-none');
+            }
+          }
+        });
+        if (leadCaptchaError){
+          leadCaptchaError.textContent = leadCaptchaErrorDefault;
+          leadCaptchaError.classList.add('d-none');
+        }
+      };
+
+      if (typeof grecaptcha.ready === 'function') {
+        grecaptcha.ready(renderCaptcha);
+      } else {
+        renderCaptcha();
+      }
     }
-    window.initLeadRecaptcha = initLeadRecaptcha;
 
     if (!recaptchaSiteKey){
       if (leadCaptchaContainer){ leadCaptchaContainer.classList.add('d-none'); }
@@ -778,10 +806,14 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       console.warn('reCAPTCHA belum dikonfigurasi. Tambahkan LEAD_FORM_RECAPTCHA_SITE_KEY di config.js untuk mengaktifkannya.');
     } else {
       const recaptchaScript = document.createElement('script');
-      recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?onload=initLeadRecaptcha&render=explicit';
+      recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
       recaptchaScript.async = true;
       recaptchaScript.defer = true;
+      recaptchaScript.onload = initLeadRecaptcha;
       document.head.appendChild(recaptchaScript);
+      if (window.grecaptcha){
+        initLeadRecaptcha();
+      }
     }
 
     // Redirect form ke checkout
@@ -796,7 +828,16 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
           leadCaptchaContainer && leadCaptchaContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
-        if (leadCaptchaError){ leadCaptchaError.classList.add('d-none'); }
+        if (leadCaptchaError){
+          leadCaptchaError.textContent = leadCaptchaErrorDefault;
+          leadCaptchaError.classList.add('d-none');
+        }
+      } else if (recaptchaSiteKey){
+        if (leadCaptchaError){
+          leadCaptchaError.textContent = 'Captcha sedang dimuat. Mohon tunggu sebentar lalu coba lagi.';
+          leadCaptchaError.classList.remove('d-none');
+        }
+        return;
       }
       // GANTI MENJADI SEPERTI INI
       try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
