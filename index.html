@@ -15,6 +15,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
+  <script src="./config.js"></script>
+
   <style>
     :root{
       --brand:#16a34a;       /* green-600 */
@@ -205,6 +207,20 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
               <div class="col-md-7">
                 <label class="form-label mb-1">Kontak (email/WA)</label>
                 <input class="form-control" id="fContact" placeholder="0812xxxx / email" required>
+              </div>
+              <div class="col-12">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="leadConfirm" required>
+                  <label class="form-check-label" for="leadConfirm">
+                    Saya bersedia dikontak dan memastikan pengajuan ini bukan dilakukan bot otomatis.
+                  </label>
+                </div>
+                <div class="small fw-semibold">Cek cepat anti-bot:</div>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <div id="leadChallengePrompt" class="badge bg-light text-dark px-3 py-2">3 + 4 = ?</div>
+                  <input class="form-control" id="leadChallengeAnswer" inputmode="numeric" pattern="[0-9]*" placeholder="Jawaban" required>
+                </div>
+                <div id="leadChallengeError" class="text-danger small d-none mt-2">Jawabannya belum tepat. Coba lagi ya.</div>
               </div>
               <div class="col-12 d-grid d-md-flex gap-2">
                 <button class="btn btn-success">
@@ -745,15 +761,78 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     // Tahun footer
     document.getElementById('y').textContent = new Date().getFullYear();
 
-// Redirect form ke checkout
-document.getElementById('leadForm').addEventListener('submit', (e)=>{
-  e.preventDefault();
-  const name = document.getElementById('fName').value.trim();
-  const contact = document.getElementById('fContact').value.trim();
-  // GANTI MENJADI SEPERTI INI
-  try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
-  location.href = './pay.html';
-});
+    const leadChallengePrompt = document.getElementById('leadChallengePrompt');
+    const leadChallengeAnswer = document.getElementById('leadChallengeAnswer');
+    const leadChallengeError = document.getElementById('leadChallengeError');
+    const leadConfirmCheckbox = document.getElementById('leadConfirm');
+
+    function randomInt(min, max){
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function setChallenge(){
+      if (!leadChallengePrompt || !leadChallengeAnswer){ return; }
+      const a = randomInt(2, 9);
+      const b = randomInt(1, 9);
+      leadChallengePrompt.textContent = `${a} + ${b} = ?`;
+      leadChallengeAnswer.value = '';
+      leadChallengeAnswer.dataset.expected = String(a + b);
+    }
+
+    function resetChallengeError(){
+      if (!leadChallengeError){ return; }
+      leadChallengeError.classList.add('d-none');
+      leadChallengeError.textContent = 'Jawabannya belum tepat. Coba lagi ya.';
+    }
+
+    function showChallengeError(message){
+      if (!leadChallengeError){ return; }
+      leadChallengeError.textContent = message;
+      leadChallengeError.classList.remove('d-none');
+    }
+
+    if (leadChallengeAnswer){
+      leadChallengeAnswer.addEventListener('input', ()=>{
+        resetChallengeError();
+      });
+    }
+
+    if (leadConfirmCheckbox){
+      leadConfirmCheckbox.addEventListener('change', ()=>{
+        if (leadConfirmCheckbox.checked){
+          resetChallengeError();
+        }
+      });
+    }
+
+    setChallenge();
+
+    // Redirect form ke checkout
+    document.getElementById('leadForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const name = document.getElementById('fName').value.trim();
+      const contact = document.getElementById('fContact').value.trim();
+      if (leadConfirmCheckbox && !leadConfirmCheckbox.checked){
+        showChallengeError('Mohon centang pernyataan konfirmasi terlebih dahulu.');
+        leadConfirmCheckbox.focus();
+        return;
+      }
+      if (leadChallengeAnswer){
+        const expected = parseInt(leadChallengeAnswer.dataset.expected || '', 10);
+        const response = parseInt(leadChallengeAnswer.value.trim(), 10);
+        if (!Number.isFinite(response) || response !== expected){
+          showChallengeError('Jawabannya belum tepat. Coba lagi ya.');
+          leadChallengeAnswer.focus();
+          setChallenge();
+          return;
+        }
+      }
+      resetChallengeError();
+      // GANTI MENJADI SEPERTI INI
+      try { localStorage.setItem('umkm_prefill', JSON.stringify({name, contact})); } catch(_) {}
+      location.href = './pay.html';
+      setTimeout(()=>{ setChallenge(); }, 3000);
+    });
 
     // Countdown ke 23:59 hari ini (Asia/Jakarta)
     function getTonightDeadline(){
