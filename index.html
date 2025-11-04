@@ -216,6 +216,9 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
                   <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Kebijakan Privasi</a>
                   serta <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Ketentuan Layanan</a> Google.
                 </div>
+                <div id="leadCaptchaSetupHint" class="alert alert-warning small d-none" role="alert">
+                  Tambahkan <code>LEAD_FORM_RECAPTCHA_SITE_KEY</code> produksi milikmu di <code>config.js</code> agar captcha aktif di domain ini.
+                </div>
                 <noscript>
                   <div class="alert alert-danger small mt-2" role="alert">
                     Aktifkan JavaScript di browser untuk menyelesaikan verifikasi captcha sebelum submit.
@@ -761,10 +764,21 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     // Tahun footer
     document.getElementById('y').textContent = new Date().getFullYear();
 
-    const recaptchaSiteKey = window.UMKM_CONFIG && window.UMKM_CONFIG.LEAD_FORM_RECAPTCHA_SITE_KEY || '';
+    const RECAPTCHA_TEST_SITE_KEY = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+    const rawSiteKey = window.UMKM_CONFIG && window.UMKM_CONFIG.LEAD_FORM_RECAPTCHA_SITE_KEY;
+    const configuredSiteKey = typeof rawSiteKey === 'string' ? rawSiteKey.trim() : '';
+    const isLocalEnvironment = ['localhost', '127.0.0.1', '::1'].includes(location.hostname) || location.protocol === 'file:';
+    const isExplicitTestKey = configuredSiteKey === RECAPTCHA_TEST_SITE_KEY;
+    const recaptchaSiteKey = configuredSiteKey && !isExplicitTestKey
+      ? configuredSiteKey
+      : (isLocalEnvironment ? RECAPTCHA_TEST_SITE_KEY : '');
+    const warnMissingProductionKey = !isLocalEnvironment && !configuredSiteKey;
+    const warnTestKeyInProduction = !isLocalEnvironment && isExplicitTestKey;
+
     const leadCaptchaContainer = document.getElementById('leadCaptcha');
     const leadCaptchaError = document.getElementById('leadCaptchaError');
     const leadCaptchaPolicy = document.getElementById('leadCaptchaPolicy');
+    const leadCaptchaSetupHint = document.getElementById('leadCaptchaSetupHint');
     const leadCaptchaErrorDefault = leadCaptchaError ? leadCaptchaError.textContent : '';
     let leadCaptchaWidget = null;
     let leadCaptchaLoader = null;
@@ -772,6 +786,17 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     function hideLeadCaptchaIfDisabled(){
       if (!leadCaptchaContainer){ return; }
       leadCaptchaContainer.classList.toggle('d-none', !recaptchaSiteKey);
+    }
+
+    function hideLeadCaptchaSetupHint(){
+      if (!leadCaptchaSetupHint){ return; }
+      leadCaptchaSetupHint.classList.add('d-none');
+    }
+
+    function showLeadCaptchaSetupHint(message){
+      if (!leadCaptchaSetupHint){ return; }
+      leadCaptchaSetupHint.innerHTML = message;
+      leadCaptchaSetupHint.classList.remove('d-none');
     }
 
     function resetLeadCaptchaError(){
@@ -869,13 +894,22 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
 
     if (!recaptchaSiteKey){
       if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.add('d-none'); }
-      console.warn('reCAPTCHA belum dikonfigurasi. Tambahkan LEAD_FORM_RECAPTCHA_SITE_KEY di config.js untuk mengaktifkannya.');
+      if (warnMissingProductionKey){
+        console.warn('reCAPTCHA belum dikonfigurasi. Tambahkan LEAD_FORM_RECAPTCHA_SITE_KEY produksi milikmu di config.js.');
+        showLeadCaptchaSetupHint('Aktifkan reCAPTCHA dengan menaruh <code>LEAD_FORM_RECAPTCHA_SITE_KEY</code> milikmu di <code>config.js</code>. Ambil site key dari <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener">Google reCAPTCHA Admin</a>.');
+      } else if (warnTestKeyInProduction){
+        console.warn('Site key testing Google tidak berlaku untuk produksi. Ganti dengan site key domain kamu di config.js.');
+        showLeadCaptchaSetupHint('Kamu masih memakai site key testing Google. Buka <code>config.js</code> dan ganti dengan site key produksi dari <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener">Google reCAPTCHA</a>.');
+      } else {
+        hideLeadCaptchaSetupHint();
+      }
     } else {
       if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.remove('d-none'); }
       if (leadCaptchaContainer){
         leadCaptchaContainer.dataset.sitekey = recaptchaSiteKey;
         leadCaptchaContainer.classList.remove('d-none');
       }
+      hideLeadCaptchaSetupHint();
       waitForRecaptcha();
     }
 
