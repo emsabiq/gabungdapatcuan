@@ -769,6 +769,19 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     let leadCaptchaWidget = null;
     let leadCaptchaRetryTimer = null;
 
+    function hideLeadCaptchaIfDisabled(){
+      if (!leadCaptchaContainer){ return; }
+      leadCaptchaContainer.classList.toggle('d-none', !recaptchaSiteKey);
+    }
+
+    function clearLeadCaptchaRetry(){
+      if (leadCaptchaRetryTimer){
+        clearInterval(leadCaptchaRetryTimer);
+        leadCaptchaRetryTimer = null;
+      }
+    }
+
+    function renderLeadCaptcha(){
     function tryRenderLeadRecaptcha(){
       if (!leadCaptchaContainer || !recaptchaSiteKey) { return; }
       if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') { return; }
@@ -800,6 +813,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
           leadCaptchaError.textContent = leadCaptchaErrorDefault;
           leadCaptchaError.classList.add('d-none');
         }
+        clearLeadCaptchaRetry();
         if (leadCaptchaRetryTimer){
           clearInterval(leadCaptchaRetryTimer);
           leadCaptchaRetryTimer = null;
@@ -809,6 +823,56 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       }
     }
 
+    function scheduleLeadCaptchaRetry(){
+      if (!recaptchaSiteKey || leadCaptchaRetryTimer || leadCaptchaWidget !== null){ return; }
+      leadCaptchaRetryTimer = setInterval(()=>{
+        if (leadCaptchaWidget !== null){
+          clearLeadCaptchaRetry();
+          return;
+        }
+        if (window.grecaptcha && typeof window.grecaptcha.ready === 'function'){
+          window.grecaptcha.ready(renderLeadCaptcha);
+        } else {
+          renderLeadCaptcha();
+        }
+      }, 1000);
+    }
+
+    function ensureLeadCaptcha(){
+      if (!recaptchaSiteKey){ return; }
+      if (!window.grecaptcha){
+        scheduleLeadCaptchaRetry();
+        return;
+      }
+      if (typeof window.grecaptcha.ready === 'function'){
+        window.grecaptcha.ready(renderLeadCaptcha);
+      } else {
+        renderLeadCaptcha();
+      }
+      scheduleLeadCaptchaRetry();
+    }
+
+    hideLeadCaptchaIfDisabled();
+
+    if (!recaptchaSiteKey){
+      if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.add('d-none'); }
+      console.warn('reCAPTCHA belum dikonfigurasi. Tambahkan LEAD_FORM_RECAPTCHA_SITE_KEY di config.js untuk mengaktifkannya.');
+    } else {
+      if (leadCaptchaPolicy){ leadCaptchaPolicy.classList.remove('d-none'); }
+      if (leadCaptchaContainer){
+        leadCaptchaContainer.dataset.sitekey = recaptchaSiteKey;
+        leadCaptchaContainer.classList.remove('d-none');
+      }
+      window.leadCaptchaOnload = ()=>{
+        ensureLeadCaptcha();
+        try { delete window.leadCaptchaOnload; } catch (_) {}
+      };
+      const recaptchaScript = document.createElement('script');
+      recaptchaScript.src = 'https://www.google.com/recaptcha/api.js?onload=leadCaptchaOnload&render=explicit';
+      recaptchaScript.async = true;
+      recaptchaScript.defer = true;
+      recaptchaScript.onerror = ()=>{
+        clearLeadCaptchaRetry();
     function kickLeadRecaptcha(){
       tryRenderLeadRecaptcha();
       if (leadCaptchaWidget === null && !leadCaptchaRetryTimer){
@@ -839,6 +903,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
         }
       };
       document.head.appendChild(recaptchaScript);
+      ensureLeadCaptcha();
       kickLeadRecaptcha();
       if (window.grecaptcha){
         kickLeadRecaptcha();
@@ -848,6 +913,9 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
     ['fName','fContact'].forEach((id)=>{
       const input = document.getElementById(id);
       if (!input) { return; }
+      input.addEventListener('focus', ensureLeadCaptcha, { once: true });
+    });
+
       input.addEventListener('focus', kickLeadRecaptcha, { once: true });
     });
 
@@ -864,6 +932,7 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       const name = document.getElementById('fName').value.trim();
       const contact = document.getElementById('fContact').value.trim();
       if (recaptchaSiteKey){
+        ensureLeadCaptcha();
         kickLeadRecaptcha();
       }
       if (leadCaptchaWidget !== null){
