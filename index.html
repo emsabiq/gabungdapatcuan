@@ -776,6 +776,12 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
 
       try {
         leadCaptchaWidget = window.grecaptcha.render(leadCaptchaContainer, {
+
+    function initLeadRecaptcha(){
+      if (!leadCaptchaContainer || !recaptchaSiteKey || !window.grecaptcha) { return; }
+      const renderCaptcha = () => {
+        if (leadCaptchaWidget !== null) { return; }
+        leadCaptchaWidget = grecaptcha.render(leadCaptchaContainer, {
           sitekey: recaptchaSiteKey,
           callback: ()=>{
             if (leadCaptchaError){
@@ -807,6 +813,12 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       tryRenderLeadRecaptcha();
       if (leadCaptchaWidget === null && !leadCaptchaRetryTimer){
         leadCaptchaRetryTimer = setInterval(tryRenderLeadRecaptcha, 800);
+      };
+
+      if (typeof grecaptcha.ready === 'function') {
+        grecaptcha.ready(renderCaptcha);
+      } else {
+        renderCaptcha();
       }
     }
 
@@ -838,6 +850,13 @@ src="https://www.facebook.com/tr?id=1328311132182013&ev=PageView&noscript=1"
       if (!input) { return; }
       input.addEventListener('focus', kickLeadRecaptcha, { once: true });
     });
+
+      recaptchaScript.onload = initLeadRecaptcha;
+      document.head.appendChild(recaptchaScript);
+      if (window.grecaptcha){
+        initLeadRecaptcha();
+      }
+    }
 
     // Redirect form ke checkout
     document.getElementById('leadForm').addEventListener('submit', (e)=>{
